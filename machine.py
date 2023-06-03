@@ -212,164 +212,9 @@ class Parser:
     def __init__(this, cannonGrammar):
         this.cannonGrammar = cannonGrammar
 
-    def closure(this, I):
-        J = copy.deepcopy(I)
-        added = True
-        while added:
-            added = False
-            productions_copy = dict(J.productions)
-            for key, value in productions_copy.items():
-                for prod in value:
-                    parts = prod.split()
-                    for part in parts:
-                        if '.' in part:
-                            if part[-1] == '.':
-                                next_part_idx = parts.index(part) + 1
-                                if next_part_idx == len(parts) or parts[next_part_idx] in this.cannonGrammar.terminals:
-                                    continue
-                                else:
-                                    part = parts[next_part_idx]
-                            concat = part.replace('.', '')
-                            if concat in this.cannonGrammar.productions:
-                                for new_prod in this.cannonGrammar.productions[concat]:
-                                    new_item = '.' + new_prod
-                                    if new_item not in J.productions.setdefault(concat, []):
-                                        J.productions.setdefault(
-                                            concat, []).append(new_item)
-                                        J.rest.setdefault(
-                                            concat, []).append(new_item)
-                                        added = True
-        return J
-
-    def goto(this, I, X):
-        J = Set()
-        I2 = copy.deepcopy(I)
-        for key, value in I2.productions.items():
-            for prod in value:
-                parts = prod.split()
-                for i, part in enumerate(parts):
-                    if '.' in part:
-                        if part.startswith('.'):
-                            concat = part.replace('.', '')
-                            if concat == X:
-                                new_prod = ' '.join(
-                                    [X + '.' if p == '.' + X else p for p in parts])
-                                J.productions.setdefault(
-                                    key, []).append(new_prod)
-                                J.heart.setdefault(key, []).append(new_prod)
-                        elif part.endswith('.'):
-                            part_idx = parts.index(part)
-                            next_part_idx = parts.index(part) + 1
-                            if next_part_idx == len(parts):
-                                continue
-                            next_part = parts[next_part_idx]
-                            sinPunt = part.replace('.', '')
-                            if next_part == X:
-                                next_part += '.'
-                                parts[next_part_idx] = next_part
-                                parts[part_idx] = sinPunt
-                                new_prod = ' '.join(parts)
-                                J.productions.setdefault(
-                                    key, []).append(new_prod)
-                                J.heart.setdefault(key, []).append(new_prod)
-        return this.closure(J)
-
-    def getSetSymbols(this, I):
-        symbols = set()
-        for value in I.productions.values():
-            for production in value:
-                parts = production.split()
-                for i, part in enumerate(parts):
-                    part = part.strip()
-                    if not part:
-                        continue
-                    if '.' in part:
-                        if part.startswith('.'):
-                            next_symbol = part[1:]
-                            symbols.add(next_symbol)
-                        elif part.endswith('.'):
-                            if i < len(parts) - 1:
-                                next_part = parts[i+1].strip().split()[0]
-                                symbols.add(next_part)
-        return list(symbols)
-
-    def compute_first(this, grammar):
-        first = {nonterminal: set() for nonterminal in grammar}
-        changes = True
-        while changes:
-            changes = False
-            for nonterminal in grammar:
-                for production in grammar[nonterminal]:
-                    symbols = production.split()
-                    for i, symbol in enumerate(symbols):
-                        if symbol.isupper():
-                            if symbol not in first[nonterminal]:
-                                first[nonterminal].add(symbol)
-                                changes = True
-                            break
-                        else:
-                            for first_symbol in first[symbol]:
-                                if first_symbol not in first[nonterminal]:
-                                    first[nonterminal].add(first_symbol)
-                                    changes = True
-                            if 'EPSILON' not in first[symbol]:
-                                break
-                    else:
-                        if 'EPSILON' not in first[nonterminal]:
-                            first[nonterminal].add('EPSILON')
-                            changes = True
-        return first
-
-    def compute_follow(this, grammar):
-        follow = {nonterminal: set() for nonterminal in grammar}
-        start_symbol = list(grammar.keys())[0]
-        follow[start_symbol].add('$')
-        first = this.compute_first(grammar)
-        changes = True
-        while changes:
-            changes = False
-            for nonterminal in grammar:
-                for production in grammar[nonterminal]:
-                    symbols = production.split()
-                    for i, symbol in enumerate(symbols):
-                        if symbol.islower():
-                            if i == len(symbols) - 1:
-                                for follow_symbol in follow[nonterminal]:
-                                    if follow_symbol not in follow[symbol]:
-                                        follow[symbol].add(follow_symbol)
-                                        changes = True
-                            else:
-                                if symbols[i+1].islower():
-                                    for first_symbol in first[symbols[i+1]]:
-                                        if first_symbol != 'EPSILON' and first_symbol not in follow[symbol]:
-                                            follow[symbol].add(first_symbol)
-                                            changes = True
-                                    if 'EPSILON' in first[symbols[i+1]]:
-                                        for follow_symbol in follow[nonterminal]:
-                                            if follow_symbol not in follow[symbol]:
-                                                follow[symbol].add(
-                                                    follow_symbol)
-                                                changes = True
-                                else:
-                                    if symbols[i+1] not in first:
-                                        first[symbols[i+1]] = {symbols[i+1]}
-                                    if symbols[i+1] != 'EPSILON' and symbols[i+1] not in follow[symbol]:
-                                        follow[symbol].add(symbols[i+1])
-                                        changes = True
-                        else:
-                            continue
-        return follow
-
-
-# Parser class
-class LR0Automaton:
-    def __init__(this, grammar, symbols):
-        this.grammar = grammar
-        this.symbols = symbols
-
     def first(this, simbolo):
-        if simbolo in this.grammar:
-            productions = this.grammar[simbolo]
+        if simbolo in this.cannonGrammar:
+            productions = this.cannonGrammar[simbolo]
             result = set()
             for production in productions:
                 first = this.first(production[0])
@@ -382,8 +227,8 @@ class LR0Automaton:
         result = set()
         if no_terminal == 'S':
             result.add('$')
-        for simbolo in this.grammar:
-            productions = this.grammar[simbolo]
+        for simbolo in this.cannonGrammar:
+            productions = this.cannonGrammar[simbolo]
             for production in productions:
                 symbols = production.split()
                 if no_terminal in symbols:
@@ -405,9 +250,9 @@ class LR0Automaton:
                 parts = item.split(' -> ')
                 if parts[1] != '':
                     symbols = parts[1].split()
-                    if symbols[0] in this.grammar:
+                    if symbols[0] in this.cannonGrammar:
                         firsts = this.first(symbols[1])
-                        for production in this.grammar[symbols[0]]:
+                        for production in this.cannonGrammar[symbols[0]]:
                             new_item = symbols[0] + ' -> . ' + production
                             if new_item not in closure:
                                 new_items = True
@@ -423,3 +268,10 @@ class LR0Automaton:
                                 closure = closure.union(
                                     this.closure({new_item}))
         return closure
+
+
+# Parser class
+class LR0Automaton:
+    def __init__(this, grammar, symbols):
+        this.cannonGrammar = grammar
+        this.symbols = symbols
