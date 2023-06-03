@@ -1,0 +1,25 @@
+La función "primero" calcula el conjunto de símbolos terminales 
+que pueden aparecer en el inicio de una cadena generada por un 
+símbolo no-terminal. Por ejemplo, si tienes la regla "A -> BC", 
+el conjunto primero(A) incluiría todos los símbolos terminales que 
+pueden aparecer al inicio de una cadena generada por A, los cuales 
+serían los símbolos en el conjunto primero(B) y primero(C).
+
+La función "siguiente" calcula el conjunto de símbolos terminales 
+que pueden aparecer justo después de una cadena que contiene un 
+símbolo no-terminal en alguna posición. Por ejemplo, si tienes la 
+regla "A -> BC" y "B -> a", el conjunto siguiente(B) incluiría todos 
+los símbolos terminales que pueden aparecer justo después de una cadena 
+que contiene el símbolo B en alguna posición, los cuales serían los 
+símbolos en el conjunto primero(C) y siguiente(A).
+
+La función "cerradura" calcula el conjunto de todos los ítems 
+alcanzables desde un conjunto de ítems dados en el autómata LR(0). 
+Un ítem es una regla de la forma "A -> α·β", donde α y β son cadenas 
+de símbolos, y el punto (·) indica la posición actual del análisis. 
+Por ejemplo, si tienes los ítems {S -> ·A, A -> ·Bb, B -> ·c} y el 
+conjunto de reglas de la gramática, la cerradura de este conjunto 
+incluiría todos los ítems alcanzables a partir de estos iniciales, 
+los cuales serían {S -> ·A, A -> ·Bb, B -> ·c, B -> ·d}, ya que la 
+regla "B -> d" se puede alcanzar a partir de "B -> ·c" aplicando la 
+regla correspondiente de la gramática.
